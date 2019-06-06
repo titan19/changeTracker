@@ -1,6 +1,6 @@
 ﻿namespace RouteChangeTracker.Models
 {
-    public class Approval : Identity
+    public class Approval
     {
         public Driver Driver;
         public bool IsApproved;

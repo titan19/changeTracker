@@ -2,23 +2,27 @@
 using System.Collections.Generic;
 using System.Linq;
 using RouteChangeTracker.Models;
+using RouteChangeTracker.Models.Enums;
 
 namespace RouteChangeTracker.Processor
 {
     public class Generator
     {
-        private readonly Random random;
-
-        public Generator(Random random = null)
-        {
-            this.random = random ?? new Random();
-        }
-
         private static readonly string[] FirstRouteParts = "Funny Cool Real Nice Fast Smart".Split(" ");
         private static readonly string[] SecondRouteParts = "Jerry Block-chain Express Route".Split(" ");
         private static readonly string[] FirstNames = "Isolda Genry John Carl Nil Nikita".Split(" ");
         private static readonly string[] LastNames = "Schtain Libovskiy Barkov Levko".Split(" ");
-        public static readonly string[] StationNames = "Lababa Warwolt Beralan Kebasa Urbani Limas".Split(" ");
+        private static readonly string[] StationNames = "Lababa Warwolt Beralan Kebasa Urbani Limas".Split(" ");
+
+        private readonly Random _random;
+
+        private int _stationId;
+        private int _passengerId;
+
+        public Generator(Random random = null)
+        {
+            _random = random ?? new Random();
+        }
 
         public IEnumerable<Route> GenerateSimpleRoutes(int count)
         {
@@ -27,7 +31,7 @@ namespace RouteChangeTracker.Processor
             {
                 var route = new Route
                 {
-                    ActiveDays = (Days)random.Next(0, 128),
+                    ActiveDays = (DayOfWeekEnum)Math.Pow(2, random.Next(0, 7)),
                     StartDay = DateTime.Now.AddDays(random.Next(-182, 183)),
                     Name = $"{ChooseRandom(FirstRouteParts)} {ChooseRandom(SecondRouteParts)}"
                 };
@@ -43,14 +47,14 @@ namespace RouteChangeTracker.Processor
             {
                 var ride = new Ride
                 {
-                    Date = route.StartDay.AddDays(random.Next(route.EndDay.Subtract(route.StartDay).Days)),
+                    Date = route.StartDay.AddDays(_random.Next(route.EndDay.Subtract(route.StartDay).Days)),
                     Driver = GenerateDriver(),
-                    StartTime = TimeSpan.FromMinutes(random.Next(60 * 24)),
+                    StartTime = TimeSpan.FromMinutes(_random.Next(60 * 24)),
                     Canceled = false
                 };
                 ride.PlannedDriver = ride.Driver;
                 ride.PlannedStartTime = ride.StartTime;
-                ride.Stations = GenerateStations(random.Next(5)).ToList();
+                ride.Stations = GenerateStations(_random.Next(5)).ToList();
                 yield return ride;
             }
         }
@@ -60,7 +64,7 @@ namespace RouteChangeTracker.Processor
             for (var i = 0; i < count; i++)
             {
                 var station = GenerateStation();
-                station.Passengers = GeneratePassengers(random.Next(1, 6)).ToList();
+                station.Passengers = GeneratePassengers(_random.Next(1, 6)).ToList();
                 yield return station;
             }
         }
@@ -69,9 +73,10 @@ namespace RouteChangeTracker.Processor
         {
             var station = new Station
             {
+                Id = ++_stationId,
                 Name = ChooseRandom(StationNames),
-                Address = ChooseRandom(StationNames) + $" {random.Next(333)}",
-                Order = random.Next(20),
+                Address = ChooseRandom(StationNames) + $" {_random.Next(333)}",
+                Order = _random.Next(20),
                 IsActive = true
             };
             station.PlannedOrder = station.Order;
@@ -84,6 +89,7 @@ namespace RouteChangeTracker.Processor
             {
                 var station = new Passenger
                 {
+                    Id = ++_passengerId,
                     Person = GeneratePerson(),
                     Destination = GenerateStation(),
                     IsActive = true
@@ -122,7 +128,7 @@ namespace RouteChangeTracker.Processor
 
         private T ChooseRandom<T>(IReadOnlyList<T> array)
         {
-            return array[random.Next(0, array.Count)];
+            return array[_random.Next(0, array.Count)];
         }
     }
 }

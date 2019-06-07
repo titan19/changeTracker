@@ -34,17 +34,21 @@ namespace RouteChangeTracker.Processor
             {ChangeTypeEnum.StationOrder,"Station order changed"},
             {ChangeTypeEnum.PassengerStatus,"Passenger status changed"},
             {ChangeTypeEnum.PassengerPerson,"Passenger person changed"},
-            {ChangeTypeEnum.PassengerDestination,"Passenger destination changed"}
+            {ChangeTypeEnum.PassengerDestination,"Passenger destination changed"},
+            {ChangeTypeEnum.PassengerAdded,"Passenger added"},
+            {ChangeTypeEnum.StationAdded,"Station added"}
         };
 
         public ChangeTracker<T> CheckChangesInList<TS>(
             Func<T, List<TS>> selector,
             Func<TS, TS, IEnumerable<AuditLogEntry>> processor)
         {
+            if (_original == null)
+                throw new InvalidOperationException("You can't use this method without origin.");
             var original = selector(_original);
             var updated = selector(_updated);
             if (original.Count != updated.Count)
-                throw new InvalidOperationException($"Different list size");
+                throw new InvalidOperationException("Different list size");
 
             for (var i = 0; i < original.Count; i++)
             {
@@ -54,11 +58,62 @@ namespace RouteChangeTracker.Processor
             return this;
         }
 
+        public ChangeTracker<T> CheckChangesInIdentityList<TS>(
+            Func<T, List<TS>> selector,
+            Func<TS, TS, IEnumerable<AuditLogEntry>> processor,
+            ChangeTypeEnum added,
+            Func<TS, IEnumerable<AuditLogEntry>> processorOfNew = null) where TS : Identity
+        {
+            var updated = selector(_updated)
+                .GroupBy(x => x.Id)
+                .ToDictionary(x => x.Key, x => x.FirstOrDefault());
+            if (_original == null)
+            {
+                foreach (var entity in updated.Values)
+                {
+                    LogsForNewItem(added, processorOfNew, entity);
+                }
+                return this;
+            }
+
+            var original = selector(_original)
+                    .GroupBy(x => x.Id)
+                    .ToDictionary(x => x.Key, x => x.FirstOrDefault());
+
+            foreach (var updatedKey in updated.Keys)
+            {
+                if (original.ContainsKey(updatedKey))
+                {
+                    Logs = Logs.Concat(processor(original[updatedKey], updated[updatedKey]));
+                }
+                else
+                {
+                    var entity = updated[updatedKey];
+                    LogsForNewItem(added, processorOfNew, entity);
+                }
+            }
+
+            return this;
+        }
+
+        private void LogsForNewItem<TS>(
+            ChangeTypeEnum added,
+            Func<TS, IEnumerable<AuditLogEntry>> processorOfNew,
+            TS entity)
+            where TS : Identity
+        {
+            Logs = Logs.Append(LogAction(added, null, entity, false));
+            if (processorOfNew != null)
+                Logs = Logs.Concat(processorOfNew(entity));
+        }
+
         public ChangeTracker<T> CheckChangesWithPlanned(
             Func<T, object> selector,
             Func<T, object> plannedSelector,
             ChangeTypeEnum code)
         {
+            if (_original == null)
+                throw new InvalidOperationException("You can't use this method without origin.");
             if (selector(_original).IsDeepEqual(selector(_updated))) return this;
             bool planned = plannedSelector != null && !plannedSelector(_original).IsDeepEqual(plannedSelector(_updated));
 

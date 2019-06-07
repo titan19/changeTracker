@@ -2,7 +2,7 @@
 {
     public class Approval
     {
-        public Driver Driver;
-        public bool IsApproved;
+        public Driver Driver { get; set; }
+        public bool IsApproved { get; set; }
     }
 }

@@ -11,7 +11,7 @@ namespace RouteChangeTracker.Processor
         public IEnumerable<AuditLogEntry> ProcessManual(Route[] original, Route[] updated)
         {
             return new ChangeTracker<Route[]>(original, updated)
-                .CheckChangesInList((a) => a.ToList(), ProcessRoute)
+                .CheckChangesInList(a => a.ToList(), ProcessRoute)
                 .Logs;
         }
 
@@ -23,17 +23,18 @@ namespace RouteChangeTracker.Processor
                 .CheckChanges(f => f.EndDay, ChangeTypeEnum.RouteEndDay)
                 .CheckChanges(f => f.StartDay, ChangeTypeEnum.RouteStartDay)
                 .CheckChanges(f => f.Name, ChangeTypeEnum.RouteName);
-            var drivers = original.Rides
-                .SelectMany(x => new[] { x.Driver, x.PlannedDriver })
-                .Concat(updated.Rides.SelectMany(x => new[] {x.Driver, x.PlannedDriver}))
-                .ToList();
+            var drivers = CreateDriversList(
+                    original.Rides
+                    .SelectMany(x => new[] { x.Driver, x.PlannedDriver })
+                    .Concat(updated.Rides.SelectMany(x => new[] {x.Driver, x.PlannedDriver}))
+                );
             foreach (var log in tracker.Logs)
             {
                 log.AddApprovals(drivers);
             }
 
             return tracker
-                .CheckChangesInList((a) => a.Rides, ProcessRide)
+                .CheckChangesInList(a => a.Rides, ProcessRide)
                 .Logs
                 .GroupBy(x => new
                 {
@@ -68,15 +69,19 @@ namespace RouteChangeTracker.Processor
 
             return new ChangeTracker<Ride>(original, updated)
                 .CheckChangesWithPlanned(
-                    (f) => f.StartTime,
-                    (f) => f.PlannedStartTime,
+                    f => f.StartTime,
+                    f => f.PlannedStartTime,
                     ChangeTypeEnum.RideStartTime)
                 .CheckChangesWithPlanned(
-                    (f) => f.Driver,
-                    (f) => f.PlannedDriver,
+                    f => f.Driver,
+                    f => f.PlannedDriver,
                     ChangeTypeEnum.RideDriver)
-                .CheckChanges((f) => f.Canceled, ChangeTypeEnum.RideStatus)
-                .CheckChangesInList((f) => f.Stations, ProcessStation)
+                .CheckChanges(f => f.Canceled, ChangeTypeEnum.RideStatus)
+                .CheckChangesInIdentityList(
+                    f => f.Stations,
+                    ProcessStation,
+                    ChangeTypeEnum.StationAdded,
+                    ProcessStation)
                 .Logs
                 .Select(x => x.AddApprovals(drivers).SetOneDayDate(updated.Date));
         }
@@ -95,26 +100,36 @@ namespace RouteChangeTracker.Processor
             return result;
         }
 
+        private IEnumerable<AuditLogEntry> ProcessStation(Station newly)
+        {
+            return new ChangeTracker<Station>(null, newly)
+                .CheckChangesInIdentityList(f => f.Passengers, ProcessPassenger, ChangeTypeEnum.PassengerAdded)
+                .Logs;
+        }
+
         private IEnumerable<AuditLogEntry> ProcessStation(Station original, Station updated)
         {
             return new ChangeTracker<Station>(original, updated)
-                .CheckChanges((f) => f.IsActive, ChangeTypeEnum.StationStatus)
-                .CheckChanges((f) => f.Name, ChangeTypeEnum.StationName)
-                .CheckChanges((f) => f.Address, ChangeTypeEnum.StationAddress)
+                .CheckChanges(f => f.IsActive, ChangeTypeEnum.StationStatus)
+                .CheckChanges(f => f.Name, ChangeTypeEnum.StationName)
+                .CheckChanges(f => f.Address, ChangeTypeEnum.StationAddress)
                 .CheckChangesWithPlanned(
-                    (f) => f.Order,
-                    (f) => f.PlannedOrder,
+                    f => f.Order,
+                    f => f.PlannedOrder,
                     ChangeTypeEnum.StationOrder)
-                .CheckChangesInList((f) => f.Passengers, ProcessPassenger)
+                .CheckChangesInIdentityList(
+                    f => f.Passengers, 
+                    ProcessPassenger, 
+                    ChangeTypeEnum.PassengerAdded)
                 .Logs;
         }
 
         private IEnumerable<AuditLogEntry> ProcessPassenger(Passenger original, Passenger updated)
         {
             return new ChangeTracker<Passenger>(original, updated)
-                .CheckChanges((f) => f.IsActive, ChangeTypeEnum.PassengerStatus)
-                .CheckChanges((f) => f.Person, ChangeTypeEnum.PassengerPerson)
-                .CheckChanges((f) => f.Destination, ChangeTypeEnum.PassengerDestination)
+                .CheckChanges(f => f.IsActive, ChangeTypeEnum.PassengerStatus)
+                .CheckChanges(f => f.Person, ChangeTypeEnum.PassengerPerson)
+                .CheckChanges(f => f.Destination, ChangeTypeEnum.PassengerDestination)
                 .Logs;
         }
     }

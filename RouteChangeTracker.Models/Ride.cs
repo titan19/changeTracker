@@ -5,12 +5,12 @@ namespace RouteChangeTracker.Models
 {
     public class Ride
     {
-        public DateTime Date;
-        public TimeSpan StartTime;
-        public TimeSpan PlannedStartTime;
-        public List<Station> Stations;
-        public Driver Driver;
-        public Driver PlannedDriver;
-        public bool Canceled;
+        public DateTime Date { get; set; }
+        public TimeSpan StartTime { get; set; }
+        public TimeSpan PlannedStartTime { get; set; }
+        public List<Station> Stations { get; set; }
+        public Driver Driver { get; set; }
+        public Driver PlannedDriver { get; set; }
+        public bool Canceled { get; set; }
     }
 }

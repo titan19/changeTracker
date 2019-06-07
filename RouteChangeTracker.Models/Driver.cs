@@ -2,7 +2,7 @@
 {
     public class Driver
     {
-        public Person Person;
-        public string LicenseNumber;
+        public Person Person { get; set; }
+        public string LicenseNumber { get; set; }
     }
 }

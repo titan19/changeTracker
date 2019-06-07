@@ -15,6 +15,8 @@
         StationOrder,
         PassengerStatus,
         PassengerPerson,
-        PassengerDestination
+        PassengerDestination,
+        StationAdded,
+        PassengerAdded
     }
 }

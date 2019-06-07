@@ -1,5 +1,4 @@
 ﻿using System;
-
 namespace RouteChangeTracker.Models.Enums
 {
     [Flags]

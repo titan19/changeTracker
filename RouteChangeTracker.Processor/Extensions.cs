@@ -23,7 +23,7 @@ namespace RouteChangeTracker.Processor
         public static AuditLogEntry SetOneDayDate(this AuditLogEntry log, DateTime date)
         {
             log.StartDate = log.EndDate = date.Date;
-            log.AffectedDays = (DayOfWeekEnum)date.DayOfWeek;
+            log.AffectedDays = (DayOfWeekEnum) (Math.Pow(2, (int)date.DayOfWeek));
 
             return log;
         }

@@ -14,15 +14,17 @@ You can change first and second. Third is audit logs file based on diff. After c
 
 
 FAQ:
+
 Q1: Why objects haven't Id field?
 
-A1: Creating separate sections for types will be not fully show all tree of instances and dependencies. ID in this case is just unnessesary field.
+A1: Creating separate sections for types will be not fully show all tree of instances and dependencies. If we show all dependencies without ID, ID in this case is just unnessesary field.
 
 Q2: Why we can't create new Station on route?
 
 A2: Because making pairs in this case will be more hard.
 
 Q3: Can we use ID field for this?
+
 A3: Yes, I got this when writing this text :) (Can be changed if it will be needed)
 
 P.S.: About start date, end date and affected days of log element. Used logic: after grouping we take first and last updated elements dates. Affected days is set of ALL days that not dependencies how much day was in enumeration.
